@@ -1,0 +1,7 @@
+# this is the layout for how I will do CellRanger
+## 1. Bring files from HPC where they are stored to 10x Cloud. To do this, see "GEO to FASTQ to 10x Genomics".
+## 2. Each sample gets its own analysis to make sure it gets its own Cell Matrix (this is 2 FASTQ files though). 
+## 3. Match dataset with its library based on the library preperation done in each paper
+## 4. Use same pipeline for all - "CellRanger v9.0.1"
+## 5. Use these reference datasets: "Mouse 2024-A" and "Human 2024-A" based on species for each dataset
+## 6. Then be able to bring filtered matrixes into R
