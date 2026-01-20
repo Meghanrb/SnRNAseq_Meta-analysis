@@ -1,0 +1,153 @@
+### Last updated 6-2-25 ####
+
+###############################################################################################################################################################################
+###########################################################
+#########################################################
+## Get files delivered from NIH to your Google bucket ###
+###########################################################
+###########################################################
+# GO to GEO ACCESSIOn that you want and then click SRA Run selector
+
+#Check the files/samples you want
+
+# Check selected and then press "deliver data" under cloud data delivery
+
+## login using Georgetown email (use gmail, put in your Georgetown email, and then login)
+
+### Check the runs you want selected, add the bucket you want it delivered to (gu-biology-pi-jh1659)
+
+## Deliver the FASTQ files (!) 
+
+# Press deliver data. Can take a few days for everything to be delivered to the Google bucket. NIH will email when complete
+
+####################################################################################################
+####################################################################################################
+### THis is how you can get files from the GOogle bucket after they are delivered from the NIH ##
+####################################################################################################
+####################################################################################################
+
+####################################################################################################
+## TO get the 10x Genmoics packages to upload - put in your home directory (ex. /home/mrb339/)##
+####################################################################################################
+
+curl -f -o txg-linux-v3.0.1.tar.gz https://cf.10xgenomics.com/cloud-cli/v3.0.1/txg-linux-v3.0.1.tar.gz
+
+tar -zxvf txg-linux-v3.0.1.tar.gz
+
+##############################################################################################
+###Run an SBATCH script to get your files from the Google bucket into the local directory ###
+###############################################################################################
+
+# first create an empty SBATCH file
+
+touch newfilename.SBATCH
+
+#then open the file
+
+nano newfilename.SBATCH
+
+#then put the following script in it (leave the # in!! )
+
+#!/bin/bash
+#SBATCH --job-name=download_and_flatten.SBATCH ## Change to your SBATCH file name
+#SBATCH --output=z01.%x
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=mrb339@georgetown.edu ## Change to your email
+#SBATCH --nodes=1
+#SBATCH --ntasks=1           # This should be 1, as we'll be using background processes or parallel
+#SBATCH --cpus-per-task=1   
+#SBATCH --time=90:00:00
+#SBATCH --mem=120G
+
+# Load any required modules here (if gsutil is via a module)
+# module load google-cloud-sdk
+
+# GCS bucket path
+GCS_BUCKET="gs://gu-biology-pi-jh1659/absinta" ## Change to the Google bucket folder you are using
+
+# Local directories
+LOCAL_DIR="/home/mrb339/downloaded_data" ### Change this to your specific directories
+FLATTENED_DIR="/home/mrb339/fastq_files" ### Change this to your specific directories
+
+# Create local directories if they don't exist
+mkdir -p "$LOCAL_DIR"
+mkdir -p "$FLATTENED_DIR"
+
+echo "Starting download from GCS bucket: $GCS_BUCKET"
+
+# Step 1: Download all directories and files from GCS
+gsutil -m cp -r "$GCS_BUCKET"/* "$LOCAL_DIR"
+
+echo "Download complete. Now moving FASTQ files..."
+
+# Step 2: Move all .fastq files to the flattened directory
+find "$LOCAL_DIR" -type f -name "*.fastq" -exec mv {} "$FLATTENED_DIR" \;
+
+echo "All .fastq files have been moved to: $FLATTENED_DIR"
+
+# Optional: Remove empty directories
+find "$LOCAL_DIR" -type d -empty -delete
+
+done
+
+wait
+
+#then save and exit and run the script
+
+sbatch newfilename.SBATCH
+
+# takes <24 hours to run
+# can check if it is working/done using the following script 
+
+squeue -u mrb339 # use your net id
+
+####################################################################################
+####### To get the fastq files out of their folders for easier upload to 10x #######
+### This only needs to be done if they are not in a folder marked fastq_files!!! ###
+####################################################################################
+
+# first make sure you are on a computing node!!!
+
+srun --pty bash
+
+##then run 
+find /home/mrb339/downloaded_data -mindepth 2 -type f -name "*.fastq.gz" -exec mv {} /home/mrb339/download \; ## change to your directories
+
+
+
+#####################################
+## Then to upload to 10x genomics ##
+####################################
+### first make sure you are on a computing node!!! ###
+
+srun --pty bash
+
+## then run ##
+
+/home/mrb339/txg-linux-v3.0.1/txg files upload --project-id A5mads37TPeCR8OmcJoEsg /home/mrb339/downloaded_data/*.fastq.gz # change the project ID and change your directories
+
+### OR ### 
+### Use the following script ##
+
+#!/bin/bash
+#SBATCH --job-name=move.SBATCH ## Change to your SBATCH file name
+#SBATCH --output=z01.%x
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=mrb339@georgetown.edu ## Change to your email
+#SBATCH --nodes=1
+#SBATCH --ntasks=1           # This should be 1, as we'll be using background processes or parallel
+#SBATCH --cpus-per-task=1   
+#SBATCH --time=90:00:00
+#SBATCH --mem=120G
+
+
+TXG_CLI="/home/mrb339/txg-linux-v3.0.1/txg"
+PROJECT_ID="xAacTk7PTGalUad90dIEElg"
+FASTQ_DIR="/home/mrb339/fastq_files"
+
+for f in "$FASTQ_DIR"/*.fastq.gz; do
+  echo "Uploading $f..."
+  yes | $TXG_CLI files upload --project-id "$PROJECT_ID" "$f"
+done
+
+###############################################################################################################################################################################
