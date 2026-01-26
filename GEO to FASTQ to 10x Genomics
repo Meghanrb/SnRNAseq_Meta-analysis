@@ -30,9 +30,9 @@
 ## TO get the 10x Genmoics packages to upload - put in your home directory (ex. /home/mrb339/)##
 ####################################################################################################
 
-curl -f -o txg-linux-v3.0.1.tar.gz https://cf.10xgenomics.com/cloud-cli/v3.0.1/txg-linux-v3.0.1.tar.gz
+curl -f -o txg-linux-v4.0.0.tar.gz "https://cf.10xgenomics.com/cloud-cli/v4.0.0/txg-linux-v4.0.0.tar.gz" ## Make sure to use the most recent one and then change in your SBATCH script
 
-tar -zxvf txg-linux-v3.0.1.tar.gz
+tar -zxvf txg-linux-v4.0.0.tar.gz #make sure you are using the most recent one and changing in your SBATCH script
 
 ##############################################################################################
 ###Run an SBATCH script to get your files from the Google bucket into the local directory ###
@@ -124,7 +124,7 @@ srun --pty bash
 
 ## then run ##
 
-/home/mrb339/txg-linux-v3.0.1/txg files upload --project-id A5mads37TPeCR8OmcJoEsg /home/mrb339/downloaded_data/*.fastq.gz # change the project ID and change your directories
+/home/mrb339/txg-linux-v4.0.0/txg files upload --project-id A5mads37TPeCR8OmcJoEsg /home/mrb339/downloaded_data/*.fastq.gz # change the project ID and change your directories and change to most recent 10X Genomics software
 
 ### OR ### 
 ### Use the following script ##
@@ -141,7 +141,7 @@ srun --pty bash
 #SBATCH --mem=120G
 
 
-TXG_CLI="/home/mrb339/txg-linux-v3.0.1/txg"
+TXG_CLI="/home/mrb339/txg-linux-v4.0.0/txg"
 PROJECT_ID="xAacTk7PTGalUad90dIEElg"
 FASTQ_DIR="/home/mrb339/fastq_files"
 
