@@ -1,4 +1,4 @@
-### Last updated 6-2-25 ####
+### Last updated 1-26-26 ####
 
 ###############################################################################################################################################################################
 ###########################################################
@@ -57,17 +57,17 @@ nano newfilename.SBATCH
 #SBATCH --ntasks=1           # This should be 1, as we'll be using background processes or parallel
 #SBATCH --cpus-per-task=1   
 #SBATCH --time=90:00:00
-#SBATCH --mem=120G
+#SBATCH --mem=120G #Woonki keeps saying this can be less, but I like to keep it high just in case
 
 # Load any required modules here (if gsutil is via a module)
 # module load google-cloud-sdk
 
 # GCS bucket path
-GCS_BUCKET="gs://gu-biology-pi-jh1659/absinta" ## Change to the Google bucket folder you are using
+GCS_BUCKET="gs://gu-biology-pi-jh1659/hou" ## Change to the Google bucket folder you are using
 
 # Local directories
-LOCAL_DIR="/home/mrb339/downloaded_data" ### Change this to your specific directories
-FLATTENED_DIR="/home/mrb339/fastq_files" ### Change this to your specific directories
+LOCAL_DIR="/home/mrb339/downloaded_data_hou" ### Change this to your specific directories
+FLATTENED_DIR="/home/mrb339/fastq_files_hou" ### Change this to your specific directories
 
 # Create local directories if they don't exist
 mkdir -p "$LOCAL_DIR"
