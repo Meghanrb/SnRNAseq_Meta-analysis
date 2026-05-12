@@ -1,0 +1,39 @@
+#!/bin/bash
+#SBATCH --job-name=wheeler_move_2.SBATCH
+#SBATCH --output=z01.%x
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=mrb339@georgetown.edu ## Change to your email
+#SBATCH --nodes=1
+#SBATCH --ntasks=1           # This should be 1, as we'll be using background processes or parallel
+#SBATCH --cpus-per-task=1   
+#SBATCH --time=90:00:00
+#SBATCH --mem=120G #Woonki keeps saying this can be less, but I like to keep it high just in case
+
+echo "Job started on $(date)"
+
+# Load the Google Cloud SDK module if your cluster requires it
+# module load google-cloud-sdk    # Uncomment if necessary
+
+# Define variables to keep things clean
+BASE="gs://gu-biology-pi-jh1659"
+TARGET="gs://gu-biology-pi-jh1659/wheeler"
+
+# Array of all the folders you want to move
+FOLDERS=(
+  "SRR8892152" "SRR8892153" "SRR8892154" "SRR8892155"
+  "SRR8892156" "SRR8892157" "SRR8892158" "SRR8892159"
+  "SRR8892160" "SRR8892161" "SRR8892162" "SRR8892163"
+  "SRR8892164" "SRR8892165" "SRR8892166" "SRR8892167"
+  "SRR8892168" "SRR8892169" "SRR9899956" "SRR9899957"
+  "SRR9899958" "SRR9899959" "SRR9899960" "SRR9899961"
+  "SRR9899962" "SRR9899963" "SRR9899964" "SRR9899965"
+  "SRR9899966"
+)
+
+# Loop through the list and move them safely (NO -m flag)
+for folder in "${FOLDERS[@]}"; do
+  echo "Moving ${folder} to ${TARGET}..."
+  gsutil mv "${BASE}/${folder}/" "${TARGET}/"
+done
+
+echo "Job completed successfully on $(date)"
