@@ -71,3 +71,33 @@ obj_clean@assays$RNA@scale.data <- matrix(nrow = 0, ncol = 0)
 
 # Save the pure, unintegrated object
 saveRDS(obj_clean, paste0(dataset_id, "_clean_singlets.rds"))
+
+
+###############################################################
+###### Mouse to human orthologs ###############################
+###############################################################
+
+# You subsetted to your clean clusters
+hou_final <- subset(seurat_obj_merge, idents = clusters_to_keep)
+
+# You plotted your validated cell types
+DimPlot(hou_final, reduction = "umap", group.by = "broad_cell_type") + ggtitle("UMAP by cell type")
+
+# You saved the validated MOUSE object
+saveRDS(hou_final, "hou_final_mouse_validated.rds")
+
+# ------------------------------------------------------------------
+# *** INSERT THE ORTHOLOG TRANSLATION BLOCK EXACTLY HERE ***
+# ------------------------------------------------------------------
+
+# 1. Extract raw counts and metadata from your validated 'hou_final' object
+raw_counts <- LayerData(hou_final, assay = "RNA", layer = "counts")
+cell_metadata <- hou_final@meta.data
+
+# ... [Run the biomaRt translation logic I provided previously] ...
+
+# 6. Rebuild the humanized object
+obj_humanized <- CreateSeuratObject(counts = counts_filtered, meta.data = cell_metadata)
+
+# 7. Save the humanized object for your master integration pipeline
+saveRDS(obj_humanized, "hou_final_humanized_for_master_integration.rds")
