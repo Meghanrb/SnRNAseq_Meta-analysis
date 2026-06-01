@@ -1,0 +1,70 @@
+library(Seurat)
+library(DoubletFinder)
+library(hdf5r)
+
+# ---------------------------------------------------------
+# 1. Setup and Load
+# ---------------------------------------------------------
+# Define your dataset name to keep metadata organized
+dataset_id <- "Dataset_Name_Here" 
+species_id <- "Mouse" # or "Human"
+tech_id    <- "10x"   # or "Drop-seq"
+
+# Assuming 'counts' is loaded via Read10X_h5 or similar
+obj <- CreateSeuratObject(counts = counts, project = dataset_id, min.cells = 3, min.features = 200)
+
+# Add master metadata early
+obj$Dataset    <- dataset_id
+obj$Species    <- species_id
+obj$Technology <- tech_id
+
+# ---------------------------------------------------------
+# 2. Quality Control (QC)
+# ---------------------------------------------------------
+# TWEAK REQUIRED: "^mt-" for mouse, "^MT-" for human
+obj[["percent.mt"]] <- PercentageFeatureSet(obj, pattern = "^mt-")
+
+# TWEAK REQUIRED: Adjust these thresholds based on the specific dataset's violin plots
+obj <- subset(obj, subset = nCount_RNA >= 500 & nCount_RNA <= 25000 &
+                            nFeature_RNA >= 500 & nFeature_RNA <= 4000 &
+                            percent.mt < 10)
+
+# ---------------------------------------------------------
+# 3. Standard Processing (Strictly for DoubletFinder)
+# ---------------------------------------------------------
+obj <- NormalizeData(obj, normalization.method = "LogNormalize")
+obj <- FindVariableFeatures(obj, selection.method = "vst", nfeatures = 2000)
+obj <- ScaleData(obj)
+obj <- RunPCA(obj, npcs = 20, verbose = FALSE)
+
+# ---------------------------------------------------------
+# 4. Doublet Removal (DoubletFinder)
+# ---------------------------------------------------------
+# Dynamic pK sweep
+sweep.res <- paramSweep(obj, PCs = 1:20, sct = FALSE)
+sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
+pk_val <- as.numeric(as.character(find.pK(sweep.stats)$pK[which.max(find.pK(sweep.stats)$BCmetric)]))
+
+# Estimate doublet rate (Assume ~0.8% per 1000 cells for 10x standard)
+nExp_poi <- round(0.008 * (ncol(obj)/1000) * ncol(obj)) 
+
+# Run DoubletFinder
+obj <- doubletFinder(obj, PCs = 1:20, pN = 0.25, pK = pk_val, nExp = nExp_poi)
+
+# Extract classifications dynamically
+df_col <- grep("DF.classifications", colnames(obj@meta.data), value = TRUE)
+obj$Doublet_Status <- obj@meta.data[[df_col]]
+
+# Filter out the doublets
+obj_clean <- subset(obj, subset = Doublet_Status == "Singlet")
+
+# ---------------------------------------------------------
+# 5. Clean Up and Save (NO INTEGRATION HERE)
+# ---------------------------------------------------------
+# Strip the temporary DoubletFinder processing (PCA, scaled data) to save disk space
+# We only want the raw counts and metadata for the final merge!
+obj_clean@reductions$pca <- NULL
+obj_clean@assays$RNA@scale.data <- matrix(nrow = 0, ncol = 0) 
+
+# Save the pure, unintegrated object
+saveRDS(obj_clean, paste0(dataset_id, "_clean_singlets.rds"))
